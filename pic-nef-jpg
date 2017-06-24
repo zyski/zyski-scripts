@@ -1,0 +1,21 @@
+#!/bin/bash
+# Convert NEF files to JPG, preserving EXIF
+
+for IF in `ls *.NEF` 
+do 
+
+  echo "$IF"
+  OF=`basename "$IF" ".NEF"`.JPG
+
+  # Extract exif from NEF
+  exiv2 -ee "$IF"
+
+  # Convert NEF to JPG
+  dcraw -c -w "$IF" | cjpeg -quality 80 -progressive > "$OF"
+  #dcraw -c -a "$IF" | cjpeg -quality 80 -progressive > "$OF"
+
+  # Add exif to JPG
+  exiv2 -ie "$OF"
+
+done
+

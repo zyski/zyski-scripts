@@ -1,0 +1,69 @@
+#!/bin/bash
+
+SEARCHDIR=$(pwd)
+SORTDIR=/home/zischkej/Pictures/sorted
+
+
+find "$SEARCHDIR" -type f -print | while read FILE
+do
+    SUBDIR=fail
+
+    # Default to file modification time
+    # 2014-09-05 07:55:55.000000000 +1000
+    DT=$(stat --printf="%y\n" "$FILE" 2>/dev/null)
+
+    if [ $? -eq 0 ]
+    then
+      # Convert DT=2014-09-05 07:55:55.000000000 +1000 to SUBDIR=2014/09
+      SUBDIR=${DT:0:7}
+      SUBDIR=${SUBDIR/-//}
+    fi
+
+    # Now try and improve on this using exif data
+    DT=$(exiv2 -K Exif.Photo.DateTimeOriginal -PEt --quiet "$FILE" 2>/dev/null)
+
+    if [ $? -eq 0 ] && [ -n "$DT" ]
+    then
+      # Convert DT=2010:10:05 03:04:54 to SUBDIR=2010/10
+      SUBDIR=${DT:0:7}
+      SUBDIR=${SUBDIR/://}
+    else
+      # Fail, try a different tag
+      DT=$(exiv2 -K Exif.Image.DateTime -PEt --quiet "$FILE" 2>/dev/null)
+
+      if [ $? -eq 0 ] && [ -n "$DT" ]
+      then
+        # Convert DT=2010:10:05 03:04:54 to SUBDIR=2010/10
+        SUBDIR=${DT:0:7}
+        SUBDIR=${SUBDIR/://}
+      fi
+    fi
+
+    # Fail
+    if [ -z "$SUBDIR" ] || [ "$SUBDIR" = "fail" ]
+    then
+      echo "${FILE}: Can't extract year/month" >&2
+      continue 
+    fi
+
+    DESTDIR=$SORTDIR/$SUBDIR
+
+    # Check destination directory 
+    if [ ! -d "$DESTDIR" ]
+    then
+      mkdir -p "$DESTDIR" || continue
+    fi
+
+    # Does file exist
+    if [ -r "$DESTDIR/$FILE" ]
+    then
+      echo "${FILE}: Already exists in $DESTDIR" >&2
+      continue
+    fi
+
+    # Move the file
+    #echo "$FILE $SORTDIR/$SUBDIR" 
+    mv -n "$FILE" "$DESTDIR"
+done
+
+

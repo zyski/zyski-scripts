@@ -1,0 +1,5 @@
+for IF in `ls *.NEF *.JPG *.jpg`
+do
+  exiv2 -F mv "$IF"
+done
+

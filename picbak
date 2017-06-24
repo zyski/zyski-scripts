@@ -1,0 +1,20 @@
+#!/bin/bash
+# Backup key data to nas
+
+export RSYNC_PASSWORD=rsync
+CONF=/home/zischkej/.backup-pics
+PREV=null
+CUR=`date "+%Y-%m-%dT%H:%M:%S"`
+
+# Read in config file
+if [ -f $CONF ]
+then
+    . $CONF
+fi
+
+# update the config file for partial backup
+printf "PREV=%s\nCUR=%s\n" "$PREV" "$CUR" > $CONF
+
+# backup and update config file on success
+rsync -av --timeout=300 --exclude '.DS_Store' --delete --link-dest=/Pictures/$PREV /home/zischkej/Pictures rsync@192.168.1.6::Backup/Pictures/$CUR && printf "PREV=%s\n" "$CUR" > $CONF
+

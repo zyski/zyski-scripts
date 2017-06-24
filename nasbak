@@ -1,0 +1,20 @@
+#!/bin/bash
+# Backup key data to nas
+
+export RSYNC_PASSWORD=rsync
+CONF=/Users/zischkej/.backup-nas
+PREV=null
+CUR=`date "+%Y-%m-%dT%H:%M:%S"`
+
+# Read in config file
+if [ -f $CONF ]
+then
+    . $CONF
+fi
+
+# update the config file for partial backup
+printf "PREV=%s\nCUR=%s\n" "$PREV" "$CUR" > $CONF
+
+# backup and update config file on success
+rsync -av --timeout=300 --exclude '.DS_Store' --exclude 'zischkej/Library/Caches' --delete --link-dest=/MacBookPro/$PREV /Users/zischkej rsync@192.168.1.6::Backup/MacBookPro/$CUR && printf "PREV=%s\n" "$CUR" > $CONF
+
